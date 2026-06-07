@@ -1,84 +1,42 @@
-# StickmanFighter — Unity 2D Android
+# StickmanFighter
 
-> Juego 2D de stickman peleador para Android, construido con Unity 2022.3.20f1 LTS, Built-in Render Pipeline e IL2CPP.
+![Unity Version](https://img.shields.io/badge/Unity-2022.3.20f1-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Android-green.svg)
 
-**Versión actual:** `v0.1.5` (build-ready) — ver [`REPARACIONES_SPRINT_4.md`](REPARACIONES_SPRINT_4.md).
+StickmanFighter es un emocionante juego de lucha en 2D desarrollado en Unity. Este repositorio contiene el código fuente completo, activos y configuraciones necesarias para compilar y ejecutar el juego.
 
 ## Características
 
-- 🎮 FSM completa: Idle, Walk Forward/Backward, Crouch, Jump, Punch, Kick (con cancel-into entre ataques)
-- ⚔️ **Sistema de combate end-to-end**: HealthSystem, Hitbox por frame data, IA enemiga, GameOver
-- 🔊 **Audio procedural**: SFX generados en runtime (sin assets binarios) — Jump, Land, Punch, Kick, Hit, Death
-- 💥 **VFX**: Hit-flash en sprites + Screen-shake con intensidad por tipo de ataque
-- 📊 **HUD**: Barras de vida con lerp suave y gradiente color (Player + Enemy)
-- 📱 UI táctil totalmente funcional + soporte de teclado en Editor
-- 🎥 Cámara con SmoothDamp y Y clampeada (X libre)
-- 🏞️ Parallax horizontal infinito (3 capas: cielo, árboles lejanos, árboles medios)
-- 🛠️ CI/CD con GitHub Actions + GameCI → **APK Android** (instalable directo en el dispositivo)
-- 🧪 9 tests EditMode (FSM + HealthSystem + CombatEvents)
-- ✅ Cero placeholders, cero warnings, cero `// TODO`
+- Mecánicas de combate fluidas.
+- Sistema de salud y eventos de combate.
+- Interfaz de usuario intuitiva para móviles.
+- Fondos con efecto parallax y suelo infinito.
+- Pruebas unitarias incluidas para asegurar la estabilidad del código.
 
-## Requisitos
+## Requisitos de Compilación
 
-| Herramienta | Versión |
-|-------------|---------|
-| Unity | 2022.3.20f1 LTS |
-| Render Pipeline | Built-in |
-| Scripting Backend | IL2CPP |
-| Android Min API | 26 |
-| Android Target API | 33 |
-| Java | 11 |
+- **Unity Editor**: Versión 2022.3.20f1.
+- **Plataforma de Destino**: Android (API Level 33).
+- **Backend de Scripting**: IL2CPP.
 
-## Cómo abrir
+## Cómo Compilar
 
-```bash
-git clone <repo>
-cd StickmanFighter
-# Abre Unity Hub → Add → seleccionar carpeta StickmanFighter
-# Unity descargará paquetes automáticamente.
-```
+1. Clona el repositorio: `git clone https://github.com/roddynaranjo2-ui/StickmanFighter.git`
+2. Abre el proyecto en Unity Hub utilizando la versión recomendada.
+3. Para compilar el APK automáticamente:
+   - Ve a `Tools > Fix Scaffold` para asegurar que todas las etiquetas y escenas estén configuradas correctamente.
+   - Ve a `Build > Build Android APK` para generar el archivo instalable.
 
-Escena de inicio: `Assets/Scenes/MainMenu.unity`.
+## Estructura del Proyecto
 
-## Controles (teclado)
-
-| Acción | Tecla |
-|--------|-------|
-| Mover adelante | `D` / `→` |
-| Mover atrás | `A` / `←` |
-| Saltar | `Espacio` |
-| Agacharse | `S` / `↓` |
-| Puñetazo | `J` |
-| Patada | `K` |
-
-## Build local
-
-```bash
-# Desde Unity Editor
-Build → Build Android APK
-
-# O desde CLI
-"C:/Program Files/Unity/Hub/Editor/2022.3.20f1/Editor/Unity.exe" \
-  -batchmode -nographics -quit -projectPath . \
-  -buildTarget Android -executeMethod BuildScript.BuildAndroid
-```
-
-El build local se genera en `Builds/Android/StickmanFighter.apk` si lanzas el menú del editor; el CI genera AAB.
+- `Assets/Scripts`: Contiene toda la lógica del juego organizada por módulos (Combat, Enemy, Player, UI, etc.).
+- `Assets/Scenes`: Escenas principales del juego (MainMenu, CombatScene).
+- `Assets/Editor`: Scripts de utilidad para el editor y procesos de construcción.
+- `Assets/Tests`: Pruebas de modo edición.
 
 ## CI/CD
 
-El workflow `.github/workflows/main.yml` se dispara en push a `main`/`develop` y construye el AAB automáticamente. Configura los secrets:
+El proyecto está preparado para integración continua utilizando GitHub Actions. La configuración se encuentra en `build_configs/main.yml` (debe moverse a `.github/workflows/main.yml` si se dispone de los permisos necesarios en el repositorio).
 
-- `UNITY_LICENSE` (license `.ulf` de Unity Personal/Pro)
-- `UNITY_EMAIL`
-- `UNITY_PASSWORD`
-
-## Troubleshooting
-
-- **Unity bloquea al abrir** → confirmar que `Assets/TextMesh Pro/` está presente. Si falta, ejecutar `Window → TextMeshPro → Import TMP Essential Resources`.
-- **CI falla en `BuildScript.BuildAndroid`** → confirmar que `Assets/Editor/BuildScript.cs` está versionado y compila sin errores.
-- **APK no se instala** → `useCustomKeystore = false` usa el `debug.keystore` de Unity. Para releases firmadas, configurar `UNITY_ANDROID_KEYSTORE_*` secrets.
-
-## Licencia
-
-MIT — ver [`LICENSE`](LICENSE).
+---
+Desarrollado con ❤️ para StickmanFighter.
