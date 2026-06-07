@@ -2,46 +2,35 @@ name: Build StickmanFighter (Android)
 
 on:
   push:
-    branches: [ "main", "master", "develop" ]
-  pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
 env:
   UNITY_VERSION: "2022.3.20f1"
-  ANDROID_API_LEVEL: "33"
 
 jobs:
-  # PASO 1: Generar archivo de activación (.alf)
-  activation:
-    name: Request activation file (.alf)
+  build:
+    name: Build APK
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Request activation file
-        uses: game-ci/unity-request-activation-file@v2
+      - name: Build
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          buildName: StickmanFighter
+          buildsPath: Builds
+          buildMethod: BuildScript.BuildAndroid
+          androidExportType: androidPackage
 
-      - name: Upload activation file
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Unity_v2022.3.20f1.alf
-          path: ./*.alf
-
-  # PASO 2: Compilación (fallará hasta que pongas la licencia, pero nos dará el .alf)
-  build-android:
-    name: Build Android APK
-    needs: activation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-      - name: Check License
-        run: |
-          if [[ -z "${{ secrets.UNITY_LICENSE }}" ]]; then
-            echo "Esperando licencia..."
-            exit 1
-          fi
+          name: StickmanFighter-Game
+          path: Builds/Android/*.apk
