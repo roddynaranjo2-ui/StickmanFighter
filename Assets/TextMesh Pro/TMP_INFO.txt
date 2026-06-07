@@ -1,0 +1,20 @@
+TextMeshPro Essential Resources — INCLUIDOS FÍSICAMENTE en este repositorio.
+
+Ya no es necesario ejecutar:
+   Window -> TextMeshPro -> Import TMP Essential Resources
+
+Contenido incluido (extraído del paquete oficial Unity com.unity.textmeshpro 3.0.6 /
+TMP Essential Resources.unitypackage):
+   - Fonts/LiberationSans.ttf + LiberationSans - OFL.txt (licencia)
+   - Resources/TMP Settings.asset
+   - Resources/Fonts & Materials/LiberationSans SDF.asset (+ Outline / Drop Shadow / Fallback materials)
+   - Resources/Style Sheets/Default Style Sheet.asset
+   - Resources/Sprite Assets/EmojiOne.asset
+   - Resources/LineBreaking Leading/Following Characters.txt
+   - Shaders/ (TMP_SDF, TMP_SDF-Mobile, TMP_SDF-Mobile Overlay/Masking, TMP_SDF SSD,
+              TMP_Bitmap, TMP_Bitmap-Mobile, TMP_Bitmap-Custom-Atlas, TMPro.cginc, TMPro_Properties.cginc)
+   - Sprites/EmojiOne.png + EmojiOne.json + EmojiOne Attribution.txt
+
+Los GUIDs son los oficiales generados por Unity para estos assets, por lo que
+las referencias serializadas en escenas/prefabs resolverán correctamente sin
+necesidad de reimportar.

@@ -1,0 +1,115 @@
+name: Build StickmanFighter (Android)
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  UNITY_VERSION: "2022.3.20f1"
+  ANDROID_API_LEVEL: "33"
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      # FIX CI-02: validar secrets fail-fast
+      - name: Validate Required Secrets
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL:   ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          missing=()
+          [[ -z "$UNITY_LICENSE"  ]] && missing+=("UNITY_LICENSE")
+          [[ -z "$UNITY_EMAIL"    ]] && missing+=("UNITY_EMAIL")
+          [[ -z "$UNITY_PASSWORD" ]] && missing+=("UNITY_PASSWORD")
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            exit 1
+          fi
+          echo "All required secrets are configured."
+
+      # FIX CI-05: cache key solo invalida cuando cambian scripts / packages / project settings relevantes
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('Assets/Scripts/**', 'Packages/manifest.json', 'ProjectSettings/ProjectSettings.asset') }}
+          restore-keys: |
+            Library-Android-
+            Library-
+
+      - name: Free Disk Space (Ubuntu)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk
+          sudo apt-get clean
+          df -h
+
+      # FIX CI-03: tests EditMode antes del build
+      - name: Run EditMode Tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE:  ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL:    ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: editmode
+          artifactsPath: test-results
+        continue-on-error: true   # No bloqueamos build en v0.1.x
+
+      # SPRINT #4 FIX: el workflow ahora genera APK (instalable directo en el dispositivo del usuario)
+      # en lugar de AAB. Si en el futuro se quiere subir a Play Store, basta con cambiar
+      # `androidExportType: androidPackage` -> `androidAppBundle` y `-apk` -> `-aab` en customParameters.
+      - name: Build Unity Project (Android APK)
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE:  ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL:    ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          buildName: StickmanFighter
+          buildsPath: Builds
+          buildMethod: BuildScript.BuildAndroid
+          androidExportType: androidPackage
+          androidKeystoreName: ""
+          androidKeystorePass: ""
+          androidKeyaliasName: ""
+          androidKeyaliasPass: ""
+          customParameters: "-buildNumber ${{ github.run_number }} -apk -logFile -"
+
+      - name: Upload APK Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: StickmanFighter-Android-APK-${{ github.run_number }}
+          path: |
+            Builds/Android/*.apk
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unity | ${{ env.UNITY_VERSION }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Android (API ${{ env.ANDROID_API_LEVEL }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Output | APK (instalación directa) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Run / versionCode | #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY

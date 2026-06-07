@@ -1,0 +1,3 @@
+-nullable:enable
+-nowarn:CS8632
+-warnaserror+
