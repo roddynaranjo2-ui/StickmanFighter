@@ -12,98 +12,36 @@ env:
   ANDROID_API_LEVEL: "33"
 
 jobs:
-  build-android:
-    name: Build Android APK
+  # PASO 1: Generar archivo de activación (.alf)
+  activation:
+    name: Request activation file (.alf)
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          lfs: true
-          fetch-depth: 0
 
-      - name: Validate Required Secrets
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL:   ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        run: |
-          missing=()
-          [[ -z "$UNITY_LICENSE"  ]] && missing+=("UNITY_LICENSE")
-          [[ -z "$UNITY_EMAIL"    ]] && missing+=("UNITY_EMAIL")
-          [[ -z "$UNITY_PASSWORD" ]] && missing+=("UNITY_PASSWORD")
-          if (( ${#missing[@]} > 0 )); then
-            echo "::error::Faltan secretos requeridos: ${missing[*]}"
-            exit 1
-          fi
-          echo "Todos los secretos están configurados."
-
-      - name: Cache Unity Library
-        uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-Android-${{ hashFiles('Assets/Scripts/**', 'Packages/manifest.json', 'ProjectSettings/ProjectSettings.asset') }}
-          restore-keys: |
-            Library-Android-
-            Library-
-
-      - name: Free Disk Space (Ubuntu)
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk
-          sudo apt-get clean
-          df -h
-
-      - name: Run EditMode Tests
-        uses: game-ci/unity-test-runner@v4
-        env:
-          UNITY_LICENSE:  ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL:    ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      - name: Request activation file
+        uses: game-ci/unity-request-activation-file@v2
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
-          testMode: editmode
-          artifactsPath: test-results
-        continue-on-error: true
 
-      - name: Build Unity Project (Android APK)
-        uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE:  ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL:    ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          unityVersion: ${{ env.UNITY_VERSION }}
-          targetPlatform: Android
-          buildName: StickmanFighter
-          buildsPath: Builds
-          buildMethod: BuildScript.BuildAndroid
-          androidExportType: androidPackage
-          androidKeystoreName: ""
-          androidKeystorePass: ""
-          androidKeyaliasName: ""
-          androidKeyaliasPass: ""
-          customParameters: "-buildNumber ${{ github.run_number }} -apk -logFile -"
-
-      - name: Upload APK Artifact
-        if: success()
+      - name: Upload activation file
         uses: actions/upload-artifact@v4
         with:
-          name: StickmanFighter-Android-APK-${{ github.run_number }}
-          path: |
-            Builds/Android/*.apk
-          retention-days: 14
-          if-no-files-found: error
+          name: Unity_v2022.3.20f1.alf
+          path: ./*.alf
 
-      - name: Build Summary
-        if: always()
+  # PASO 2: Compilación (fallará hasta que pongas la licencia, pero nos dará el .alf)
+  build-android:
+    name: Build Android APK
+    needs: activation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Check License
         run: |
-          echo "## Resumen de Construcción" >> $GITHUB_STEP_SUMMARY
-          echo "| Ítem | Valor |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Unity | ${{ env.UNITY_VERSION }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Plataforma | Android (API ${{ env.ANDROID_API_LEVEL }}) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Salida | APK (instalación directa) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Ejecución | #${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          if [[ -z "${{ secrets.UNITY_LICENSE }}" ]]; then
+            echo "Esperando licencia..."
+            exit 1
+          fi
